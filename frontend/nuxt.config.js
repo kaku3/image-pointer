@@ -3,7 +3,10 @@ import colors from 'vuetify/es5/util/colors'
 const routerBase = process.env.DEPLOY_ENV === 'GH_PAGES'
   ? {
       router: {
-        base: '/image-pointer/frontend/dist/'
+        base: '/image-pointer/'
+      },
+      generate: {
+        dir: 'docs'
       }
     }
   : {}
