@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "short_name": "frontend",
-  "description": "## Build Setup",
+  "description": "画像の上に点を置くウェブアプリケーションです。 csv import / csv export に対応",
   "icons": [
     {
       "src": "/image-pointer/_nuxt/icons/icon_64x64.e3e9fb.png",
