@@ -24,26 +24,27 @@
         </v-row>
       </v-card-text>
       <v-row>
-        <v-col cols="7">
+        <v-col cols="xs-12 sm-12 md-7">
           <div class="image-container">
             <img ref="backgroundImage" :src="imageUrl" class="background-image">
-            <div class="pointer-container" :style="pointerContainerStyle" @mousedown.stop="onPoint">
+            <div class="pointer-container" :style="pointerContainerStyle" @click.stop="onPoint">
               <VueDraggableResizable
                 v-for="(p, i) in points"
                 :key="i"
                 :parent="true"
-                :x="p.x"
-                :y="p.y"
-                :w="16"
-                :h="16"
+                :x="toPositionX(p.x)"
+                :y="toPositionY(p.y)"
+                :min-width="16"
+                :min-height="16"
                 :resizable="false"
                 class="pointer"
                 :style="pointerStyle(p)"
+                v-html="$sanitize(p.information)"
               />
             </div>
           </div>
         </v-col>
-        <v-col cols="5">
+        <v-col cols="xs-12 sm-12 md-5">
           <v-row>
             <v-col cols="auto">
               <label>color</label>
@@ -66,28 +67,8 @@
                 </v-card>
               </v-dialog>
             </v-col>
-            <v-col cols="4">
-              <v-slider
-                v-model="edit.size"
-                dense
-                label="size"
-                max="64"
-                min="4"
-              >
-                <template #append>
-                  <v-text-field
-                    v-model="edit.size"
-                    class="mt-0 pt-0"
-                    hide-details
-                    single-line
-                    type="number"
-                    style="width: 60px"
-                  />
-                </template>
-              </v-slider>
-            </v-col>
             <v-spacer />
-            <v-col cols="2">
+            <v-col cols="auto">
               <VueJsonToCsv :json-data="points" csv-title="pointer">
                 <v-btn :disabled="!points.length">
                   Export
@@ -102,7 +83,6 @@
                   <th>x</th>
                   <th>y</th>
                   <th>color</th>
-                  <th>size</th>
                   <th>information</th>
                   <th />
                 </tr>
@@ -112,9 +92,8 @@
                   v-for="(p, i) in points"
                   :key="i"
                 >
-                  <td>{{ p.x }}</td>
-                  <td>{{ p.y }}</td>
-                  <td>{{ p.size }}</td>
+                  <td>{{ percent(p.x) }}</td>
+                  <td>{{ percent(p.y) }}</td>
                   <td>{{ p.color }}</td>
                   <td><input v-model="p.information" type="text"></td>
                   <td>
@@ -138,6 +117,9 @@ import VueDraggableResizable from 'vue-draggable-resizable'
 import VueJsonToCsv from 'vue-json-to-csv'
 import { parse } from 'csv-parse/lib/sync'
 
+import sanitizeHTML from 'sanitize-html'
+
+Vue.prototype.$sanitize = sanitizeHTML
 Vue.component('VueDraggableResizable', VueDraggableResizable)
 
 export default {
@@ -154,8 +136,7 @@ export default {
       imageWidth: 0,
       imageHeight: 0,
       edit: {
-        color: 'red',
-        size: 16
+        color: 'red'
       }
     }
   },
@@ -168,11 +149,22 @@ export default {
     }
   },
   methods: {
+    toPositionX (x) {
+      return Number.parseInt(x * this.imageWidth)
+    },
+    toPositionY (y) {
+      return Number.parseInt(y * this.imageHeight)
+    },
+
+    percent (v) {
+      return Number.parseFloat(v * 100).toFixed(2) + '%'
+    },
+
     pointerStyle (p) {
       return {
         backgroundColor: p.color,
-        width: `${p.size}px`,
-        height: `${p.size}px`
+        width: 'max-content',
+        height: 'max-content'
       }
     },
     onChangeImageFile (file) {
@@ -204,10 +196,21 @@ export default {
       reader.readAsText(file)
     },
     onPoint (e) {
+      // 画像を読み込んでいない
+      if (!this.imageWidth || !this.imageHeight) {
+        return
+      }
+
+      // 画像をクリックしていない
+      if (e.currentTarget !== e.srcElement) {
+        return
+      }
+
+      debugger
+
       this.points.push({
-        x: e.offsetX,
-        y: e.offsetY,
-        size: this.edit.size,
+        x: e.offsetX / this.imageWidth,
+        y: e.offsetY / this.imageHeight,
         color: this.edit.color,
         information: ''
       })
@@ -237,10 +240,13 @@ export default {
   .pointer {
     cursor: pointer;
     position: absolute;
+    min-width: 16px;
+    min-height: 16px;
     background: red;
     border: 1px solid white;
     border-radius: 100vh;
-    opacity: .5;
+    padding: .25rem .5rem;
+    color: white;
   }
 }
 .pointer-table {
@@ -250,10 +256,7 @@ export default {
   th:nth-child(3) {
     width: 3rem;
   }
-  th:nth-child(4) {
-    width: 2rem;
-  }
-  th:nth-child(6) {
+  th:nth-child(5) {
     width: 2rem;
   }
   td > input {
